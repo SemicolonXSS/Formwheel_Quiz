@@ -144,8 +144,15 @@
 
   .qtext { font-weight: 800; font-size: 20px; line-height: 1.4; margin: 0 0 18px; }
 
-  .timerbar-track { height: 7px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin-bottom: 18px; }
-  .timerbar-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.2s linear; }
+  .timer-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .timerbar-track { flex: 1; height: 7px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .timerbar-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.2s linear, background-color 0.2s ease; }
+  .timerbar-fill.urgent { background: var(--bad); }
+  .timer-num {
+    font-weight: 800; font-size: 15px; color: var(--accent); min-width: 34px; text-align: right;
+    font-variant-numeric: tabular-nums; transition: color 0.2s ease;
+  }
+  .timer-num.urgent { color: var(--bad); }
 
   .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; }
   .choice-btn {
@@ -337,6 +344,37 @@
   function wireNavbar(){
     var b = document.getElementById('brandBtn');
     if(b) b.onclick = function(){ window.open(FORMWHEEL_HOME, '_blank'); };
+  }
+
+  // ---------- timer helpers ----------
+  // Renders a shared "timer bar + numeric seconds" block used on both
+  // the host question screen and the player question screen.
+  function timerRowHtml(){
+    return '' +
+      '<div class="timer-row">' +
+        '<div class="timerbar-track"><div class="timerbar-fill" id="tfill" style="width:100%"></div></div>' +
+        '<div class="timer-num" id="tnum">--</div>' +
+      '</div>';
+  }
+  // Updates the bar width + numeric countdown + urgent styling for a
+  // given start timestamp and total time limit (seconds). Returns the
+  // elapsed seconds so callers can decide whether time is up.
+  function updateTimerUI(startedAt, timeLimit){
+    var elapsed = (Date.now() - startedAt) / 1000;
+    var remaining = Math.max(0, Math.ceil(timeLimit - elapsed));
+    var pct = Math.max(0, 100 * (1 - elapsed / timeLimit));
+    var fill = document.getElementById('tfill');
+    var num = document.getElementById('tnum');
+    var urgent = remaining <= 5;
+    if(fill){
+      fill.style.width = pct + '%';
+      fill.classList.toggle('urgent', urgent);
+    }
+    if(num){
+      num.textContent = remaining + 's';
+      num.classList.toggle('urgent', urgent);
+    }
+    return elapsed;
   }
 
   // ---------- render router ----------
@@ -532,7 +570,7 @@
       navbarHtml('코드 <b>' + S.pin + '</b>') +
       '<main><div class="stage wide">' +
         '<div class="topbar"><span class="pinmini">문제 ' + (qi+1) + ' / ' + S.meta.questions.length + '</span><span></span></div>' +
-        '<div class="timerbar-track"><div class="timerbar-fill" id="tfill" style="width:100%"></div></div>' +
+        timerRowHtml() +
         '<div class="qtext">' + escapeHtml(q.text) + '</div>' +
         '<div class="choices-grid">' + choicesHtml + '</div>' +
         '<p class="sub" style="margin-top:16px;text-align:center;" id="answeredCount">응답 0명</p>' +
@@ -548,10 +586,7 @@
     storeGet('qz:'+S.pin+':state').then(function(st){ if(st) started = st.questionStartedAt; });
 
     questionTickTimer = setInterval(function(){
-      var elapsed = (Date.now() - started) / 1000;
-      var pct = Math.max(0, 100 * (1 - elapsed / S.meta.timeLimit));
-      var fill = document.getElementById('tfill');
-      if(fill) fill.style.width = pct + '%';
+      var elapsed = updateTimerUI(started, S.meta.timeLimit);
       if(elapsed >= S.meta.timeLimit){
         goToReveal();
       }
@@ -746,7 +781,7 @@
     app.innerHTML =
       navbarHtml('') +
       '<main><div class="stage">' +
-        '<div class="timerbar-track"><div class="timerbar-fill" id="tfill" style="width:100%"></div></div>' +
+        timerRowHtml() +
         '<div class="qtext">' + escapeHtml(q.text) + '</div>' +
         '<div class="choices-grid" id="choiceGrid">' + choicesHtml + '</div>' +
       '</div></main>';
@@ -756,11 +791,10 @@
       btn.onclick = function(){ submitAnswer(+btn.dataset.i); };
     });
 
+    updateTimerUI(S._questionStartedAt, S.meta.timeLimit);
+
     questionTickTimer = setInterval(function(){
-      var elapsed = (Date.now() - S._questionStartedAt) / 1000;
-      var pct = Math.max(0, 100 * (1 - elapsed / S.meta.timeLimit));
-      var fill = document.getElementById('tfill');
-      if(fill) fill.style.width = pct + '%';
+      var elapsed = updateTimerUI(S._questionStartedAt, S.meta.timeLimit);
       if(elapsed >= S.meta.timeLimit){
         clearInterval(questionTickTimer);
         if(!S.lastAnswer){ goto('player-waiting'); }
@@ -878,7 +912,7 @@
       '<main><div class="stage">' +
         '<div class="center-msg" style="margin-bottom:16px;padding:16px 0;">' +
           '<div class="big">🏁</div>' +
-          '<h1 class="title">최종 순위 ' + myRank + '위</h1>' +
+          '<h1 class="title">최종 순위 ' + myRank + '위!</h1>' +
           '<p class="sub">수고하셨어요!</p>' +
         '</div>' +
         leadHtml +
