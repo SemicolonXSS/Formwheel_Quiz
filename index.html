@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>FormWheel — Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F7F7FB;
+    --surface: #FFFFFF;
+    --surface-2: #F1F1F8;
+    --border: #E6E6F0;
+    --text: #18181B;
+    --muted: #71717A;
+    --accent: #4F46E5;
+    --accent-soft: #EEF0FF;
+
+    --c-a: #FF6B6B;
+    --c-b: #22B8CF;
+    --c-c: #FFB020;
+    --c-d: #7C5CFC;
+
+    --good: #16A34A;
+    --bad: #E11D48;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100%;
+  }
+
+  #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+  }
+  .brand .mark {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .brand .wordmark { font-weight: 700; font-size: 16px; color: var(--text); }
+  .brand .tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 3px 8px;
+    border-radius: 999px;
+    margin-left: 2px;
+  }
+  .nav-meta { font-size: 13px; color: var(--muted); }
+  .nav-meta b { color: var(--text); letter-spacing: 1px; }
+
+  main { flex: 1; display: flex; justify-content: center; padding: 28px 18px 48px; }
+
+  .stage { width: 100%; max-width: 460px; display: flex; flex-direction: column; }
+  .stage.wide { max-width: 720px; }
+
+  h1.title { font-weight: 800; font-size: 24px; line-height: 1.3; margin: 0 0 6px; }
+  p.sub { color: var(--muted); font-size: 14.5px; line-height: 1.6; margin: 0 0 24px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+
+  .field { margin-bottom: 16px; }
+  label.flabel { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+
+  input[type=text], input[type=tel] {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 12px 13px;
+    font-size: 15.5px;
+    font-family: inherit;
+    outline: none;
+  }
+  input[type=text]:focus, input[type=tel]:focus { border-color: var(--accent); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: none; border-radius: 10px; padding: 14px 20px;
+    font-size: 15.5px; font-weight: 700; font-family: inherit;
+    cursor: pointer; width: 100%; color: #fff; background: var(--accent);
+    transition: transform .08s ease, opacity .15s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn.ghost { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  .home-choice { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+  .home-card {
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 20px; text-align: left; cursor: pointer; color: var(--text);
+  }
+  .home-card h3 { margin: 0 0 4px; font-size: 17px; font-weight: 700; }
+  .home-card p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .home-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+  .pin-box {
+    background: var(--accent-soft); border: 1.5px dashed var(--accent);
+    border-radius: 14px; padding: 24px 20px; text-align: center; margin-bottom: 20px;
+  }
+  .pin-box .plabel { color: var(--accent); font-size: 12.5px; font-weight: 700; margin-bottom: 6px; }
+  .pin { font-size: 46px; font-weight: 800; letter-spacing: 6px; color: var(--text); }
+
+  .player-chip {
+    display: inline-block; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 14px; margin: 4px; font-size: 13.5px; font-weight: 600;
+  }
+  .player-wrap { display: flex; flex-wrap: wrap; gap: 0; margin-top: 4px; margin-bottom: 20px; }
+
+  .qtext { font-weight: 800; font-size: 20px; line-height: 1.4; margin: 0 0 18px; }
+
+  .timerbar-track { height: 7px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin-bottom: 18px; }
+  .timerbar-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.2s linear; }
+
+  .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; }
+  .choice-btn {
+    border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 15.5px;
+    padding: 20px 12px; min-height: 92px; cursor: pointer; text-align: left; display: flex; align-items: center;
+  }
+  .choice-btn:active { transform: scale(0.98); }
+  .choice-btn.a { background: var(--c-a); }
+  .choice-btn.b { background: var(--c-b); }
+  .choice-btn.c { background: var(--c-c); }
+  .choice-btn.d { background: var(--c-d); }
+  .choice-btn:disabled { opacity: .35; cursor: default; }
+  .choice-btn.dim { opacity: .25; }
+  .choice-btn.picked { outline: 3px solid var(--text); outline-offset: -3px; }
+
+  .center-msg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; padding: 40px 0; }
+  .center-msg .big { font-size: 38px; }
+
+  .lead-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; background: var(--surface-2); border-radius: 10px; margin-bottom: 8px;
+  }
+  .lead-row .rank { color: var(--muted); width: 26px; font-weight: 700; }
+  .lead-row .name { flex: 1; font-weight: 600; }
+  .lead-row .score { font-weight: 800; color: var(--accent); }
+  .lead-row.me { border: 1.5px solid var(--accent); }
+
+  .qedit-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: var(--surface-2); }
+  .qedit-choice-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .qedit-choice-row input[type=radio] { width: 17px; height: 17px; accent-color: var(--accent); flex-shrink: 0; }
+  .qedit-choice-row input[type=text] { flex: 1; }
+  .remove-link { background: none; border: none; color: var(--bad); font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 0; }
+
+  .seglist { display: flex; gap: 8px; margin-bottom: 4px; }
+  .seg-btn {
+    flex: 1; padding: 10px; text-align: center; border-radius: 10px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--muted); cursor: pointer; font-weight: 700;
+  }
+  .seg-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  .errmsg { color: var(--bad); font-size: 13px; margin-top: 10px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .topbar .pinmini { color: var(--muted); font-size: 13.5px; font-weight: 600; }
+  .topbar .pinmini b { color: var(--text); letter-spacing: 2px; }
+
+  .bar-row { margin-bottom: 10px; }
+  .bar-row .barlabel { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; color: var(--muted); font-weight: 600; }
+  .bar-track { height: 20px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; }
+
+  .footer-actions { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .medal { font-size: 18px; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+
+  var FORMWHEEL_HOME = 'https://semicolonxss.github.io/Formwheel/';
+
+  // ---------- utilities ----------
+  function uid(len){
+    return Math.random().toString(36).slice(2, 2+len);
+  }
+  function genPin(){
+    return String(Math.floor(1000 + Math.random()*9000));
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+      return map[c];
+    });
+  }
+  function medalTag(i){
+    var m = ['🥇','🥈','🥉'][i];
+    return m ? '<span class="medal">' + m + '</span>' : '';
+  }
+
+  async function storeGet(key){
+    try{
+      var r = await window.storage.get(key, true);
+      return r ? JSON.parse(r.value) : null;
+    }catch(e){
+      return null;
+    }
+  }
+  async function storeSet(key, val){
+    try{
+      await window.storage.set(key, JSON.stringify(val), true);
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+  async function storeList(prefix){
+    try{
+      var r = await window.storage.list(prefix, true);
+      return r && r.keys ? r.keys : [];
+    }catch(e){
+      return [];
+    }
+  }
+
+  // ---------- app state ----------
+  var app = document.getElementById('app');
+  var pollTimer = null;
+  var questionTickTimer = null;
+  var draftTimeLimit = 20;
+  var lobbyPlayers = [];
+  var hostAnswerCount = 0;
+
+  var S = {
+    screen: 'home',
+    role: null,
+    pin: null,
+    playerId: null,
+    playerName: '',
+    meta: null,
+    draftQuestions: null,
+    lastAnswer: null,
+    _qIndex: 0,
+    _questionStartedAt: 0
+  };
+
+  function clearTimers(){
+    if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+    if(questionTickTimer){ clearInterval(questionTickTimer); questionTickTimer = null; }
+  }
+
+  function goto(screen){
+    clearTimers();
+    S.screen = screen;
+    render();
+  }
+
+  function defaultQuestions(){
+    return [
+      { text: '다음 중 대한민국의 수도는 어디일까요?', choices: ['부산','서울','인천','대구'], correct: 1 },
+      { text: '물의 화학식은 무엇일까요?', choices: ['CO2','O2','H2O','NaCl'], correct: 2 },
+      { text: '태양계에서 가장 큰 행성은?', choices: ['지구','목성','화성','토성'], correct: 1 },
+      { text: '1년은 총 며칠일까요? (평년 기준)', choices: ['364일','365일','366일','360일'], correct: 1 }
+    ];
+  }
+
+  function navbarHtml(rightText){
+    return '' +
+      '<div class="navbar">' +
+        '<button class="brand" id="brandBtn">' +
+          '<span class="mark">F</span>' +
+          '<span class="wordmark">FormWheel</span>' +
+          '<span class="tag">Quiz</span>' +
+        '</button>' +
+        '<span class="nav-meta">' + (rightText || '') + '</span>' +
+      '</div>';
+  }
+  function wireNavbar(){
+    var b = document.getElementById('brandBtn');
+    if(b) b.onclick = function(){ window.open(FORMWHEEL_HOME, '_blank'); };
+  }
+
+  // ---------- render router ----------
+  function render(){
+    if(S.screen === 'home') return renderHome();
+    if(S.screen === 'host-setup') return renderHostSetup();
+    if(S.screen === 'host-lobby') return renderHostLobby();
+    if(S.screen === 'host-question') return renderHostQuestion();
+    if(S.screen === 'host-reveal') return renderHostReveal();
+    if(S.screen === 'host-final') return renderHostFinal();
+    if(S.screen === 'join') return renderJoin();
+    if(S.screen === 'player-lobby') return renderPlayerLobby();
+    if(S.screen === 'player-question') return renderPlayerQuestion();
+    if(S.screen === 'player-waiting') return renderPlayerWaiting();
+    if(S.screen === 'player-reveal') return renderPlayerReveal();
+    if(S.screen === 'player-final') return renderPlayerFinal();
+  }
+
+  // ---------- HOME ----------
+  function renderHome(){
+    app.innerHTML =
+      navbarHtml('') +
+      '<main><div class="stage">' +
+        '<h1 class="title">Quiz 만들기</h1>' +
+        '<p class="sub">각자 폰이나 PC로 접속해서 실시간으로 맞히는 퀴즈예요. 이 게임의 점수는 저장되지 않고, 창을 닫으면 사라져요.</p>' +
+        '<div class="home-choice">' +
+          '<div class="home-card" id="pickHost"><h3>퀴즈 만들기</h3><p>문제를 준비하고 참가 코드를 발급해요. 큰 화면(발표용)에 띄워두세요.</p></div>' +
+          '<div class="home-card" id="pickJoin"><h3>참가하기</h3><p>진행자에게 받은 코드를 입력하고 닉네임으로 들어가요.</p></div>' +
+        '</div>' +
+      '</div></main>';
+    wireNavbar();
+    document.getElementById('pickHost').onclick = function(){
+      S.draftQuestions = defaultQuestions();
+      goto('host-setup');
+    };
+    document.getElementById('pickJoin').onclick = function(){ goto('join'); };
+  }
+
+  // ---------- HOST: setup ----------
+  function renderHostSetup(){
+    var qs = S.draftQuestions;
+    var timeSegHtml = [10,15,20,30].map(function(t){
+      return '<div class="seg-btn ' + (t===draftTimeLimit?'active':'') + '" data-t="' + t + '">' + t + '초</div>';
+    }).join('');
+
+    app.innerHTML =
+      navbarHtml('') +
+      '<main><div class="stage">' +
+        '<h1 class="title">문제 준비하기</h1>' +
+        '<p class="sub">문제와 보기 4개, 정답을 정해주세요. 필요하면 문제를 더 추가하거나 지울 수 있어요.</p>' +
+        '<div class="field"><label class="flabel">문제당 제한 시간</label><div class="seglist" id="timeSeg">' + timeSegHtml + '</div></div>' +
+        '<div id="qlist"></div>' +
+        '<button class="btn ghost" id="addQ" style="margin-bottom:18px;">질문 추가</button>' +
+        '<button class="btn" id="createGame">게임 만들고 코드 받기</button>' +
+        '<div class="errmsg" id="createErr"></div>' +
+      '</div></main>';
+    wireNavbar();
+
+    var qlist = document.getElementById('qlist');
+    qlist.innerHTML = qs.map(function(q, qi){
+      var choicesHtml = q.choices.map(function(c, ci){
+        return '' +
+          '<div class="qedit-choice-row">' +
+            '<input type="radio" name="correct-' + qi + '" data-qi="' + qi + '" data-ci="' + ci + '" class="correct-radio" ' + (q.correct===ci?'checked':'') + ' />' +
+            '<input type="text" class="choice-input" data-qi="' + qi + '" data-ci="' + ci + '" value="' + escapeHtml(c) + '" placeholder="보기 ' + (ci+1) + '" />' +
+          '</div>';
+      }).join('');
+      return '' +
+        '<div class="qedit-card" data-qi="' + qi + '">' +
+          '<div class="field"><label class="flabel">문제 ' + (qi+1) + '</label>' +
+          '<input type="text" class="qtext-input" data-qi="' + qi + '" value="' + escapeHtml(q.text) + '" placeholder="문제를 입력하세요" /></div>' +
+          choicesHtml +
+          (qs.length > 1 ? '<button class="remove-link" data-qi="' + qi + '">이 문제 삭제</button>' : '') +
+        '</div>';
+    }).join('');
+
+    document.getElementById('timeSeg').querySelectorAll('.seg-btn').forEach(function(el){
+      el.onclick = function(){ draftTimeLimit = parseInt(el.dataset.t, 10); renderHostSetup(); };
+    });
+    qlist.querySelectorAll('.qtext-input').forEach(function(el){
+      el.oninput = function(){ qs[+el.dataset.qi].text = el.value; };
+    });
+    qlist.querySelectorAll('.choice-input').forEach(function(el){
+      el.oninput = function(){ qs[+el.dataset.qi].choices[+el.dataset.ci] = el.value; };
+    });
+    qlist.querySelectorAll('.correct-radio').forEach(function(el){
+      el.onchange = function(){ qs[+el.dataset.qi].correct = +el.dataset.ci; };
+    });
+    qlist.querySelectorAll('.remove-link').forEach(function(el){
+      el.onclick = function(){ qs.splice(+el.dataset.qi, 1); renderHostSetup(); };
+    });
+    document.getElementById('addQ').onclick = function(){
+      qs.push({ text: '', choices: ['','','',''], correct: 0 });
+      renderHostSetup();
+    };
+
+    document.getElementById('createGame').onclick = async function(){
+      var errEl = document.getElementById('createErr');
+      for(var i=0;i<qs.length;i++){
+        var q = qs[i];
+        if(!q.text.trim() || q.choices.some(function(c){ return !c.trim(); })){
+          errEl.textContent = '모든 문제와 보기 4개를 채워주세요.';
+          return;
+        }
+      }
+      errEl.textContent = '생성 중...';
+      var pin = null;
+      for(var a=0;a<8;a++){
+        var candidate = genPin();
+        var exists = await storeGet('qz:'+candidate+':meta');
+        if(!exists){ pin = candidate; break; }
+      }
+      if(!pin){
+        errEl.textContent = '코드 생성에 실패했어요. 다시 시도해주세요.';
+        return;
+      }
+      S.pin = pin;
+      S.meta = { questions: qs.map(function(q){ return { text: q.text, choices: q.choices.slice(), correct: q.correct }; }), timeLimit: draftTimeLimit };
+      await storeSet('qz:'+pin+':meta', S.meta);
+      await storeSet('qz:'+pin+':state', { phase: 'lobby', qIndex: -1, questionStartedAt: 0 });
+      S.role = 'host';
+      S._qIndex = 0;
+      goto('host-lobby');
+    };
+  }
+
+  // ---------- HOST: lobby ----------
+  function renderHostLobby(){
+    app.innerHTML =
+      navbarHtml('코드 <b>' + S.pin + '</b>') +
+      '<main><div class="stage wide">' +
+        '<div class="pin-box"><div class="plabel">참가 코드</div><div class="pin">' + S.pin + '</div></div>' +
+        '<p class="sub" style="text-align:center;" id="lobbySub">참가자들은 이 코드와 닉네임으로 접속해요. (0명 참가 중)</p>' +
+        '<div class="player-wrap" id="players"></div>' +
+        '<div class="footer-actions">' +
+          '<button class="btn" id="startBtn" disabled>게임 시작하기</button>' +
+          '<button class="btn ghost" id="cancelBtn">취소하고 처음으로</button>' +
+        '</div>' +
+      '</div></main>';
+    wireNavbar();
+    renderPlayerChips();
+
+    document.getElementById('startBtn').onclick = async function(){
+      S._qIndex = 0;
+      await storeSet('qz:'+S.pin+':state', { phase: 'question', qIndex: 0, questionStartedAt: Date.now() });
+      goto('host-question');
+    };
+    document.getElementById('cancelBtn').onclick = function(){ resetToHome(); };
+
+    pollTimer = setInterval(pollLobby, 1500);
+    pollLobby();
+  }
+  function renderPlayerChips(){
+    var el = document.getElementById('players');
+    if(!el) return;
+    el.innerHTML = lobbyPlayers.length
+      ? lobbyPlayers.map(function(p){ return '<span class="player-chip">' + escapeHtml(p.name) + '</span>'; }).join('')
+      : '<span style="color:var(--muted);font-size:13.5px;">아직 참가자가 없어요. 코드를 알려주세요.</span>';
+  }
+  async function pollLobby(){
+    var keys = await storeList('qz:'+S.pin+':player:');
+    var players = [];
+    for(var i=0;i<keys.length;i++){
+      var v = await storeGet(keys[i]);
+      if(v) players.push(v);
+    }
+    lobbyPlayers = players;
+    renderPlayerChips();
+    var btn = document.getElementById('startBtn');
+    if(btn) btn.disabled = lobbyPlayers.length === 0;
+    var sub = document.getElementById('lobbySub');
+    if(sub) sub.textContent = '참가자들은 이 코드와 닉네임으로 접속해요. (' + lobbyPlayers.length + '명 참가 중)';
+  }
+
+  // ---------- HOST: question ----------
+  function renderHostQuestion(){
+    var qi = S._qIndex;
+    var q = S.meta.questions[qi];
+    var choicesHtml = q.choices.map(function(c,i){
+      return '<div class="choice-btn ' + ['a','b','c','d'][i] + '">' + escapeHtml(c) + '</div>';
+    }).join('');
+
+    app.innerHTML =
+      navbarHtml('코드 <b>' + S.pin + '</b>') +
+      '<main><div class="stage wide">' +
+        '<div class="topbar"><span class="pinmini">문제 ' + (qi+1) + ' / ' + S.meta.questions.length + '</span><span></span></div>' +
+        '<div class="timerbar-track"><div class="timerbar-fill" id="tfill" style="width:100%"></div></div>' +
+        '<div class="qtext">' + escapeHtml(q.text) + '</div>' +
+        '<div class="choices-grid">' + choicesHtml + '</div>' +
+        '<p class="sub" style="margin-top:16px;text-align:center;" id="answeredCount">응답 0명</p>' +
+        '<button class="btn" id="revealBtn" style="margin-top:6px;">지금 결과 보기</button>' +
+      '</div></main>';
+    wireNavbar();
+    document.getElementById('revealBtn').onclick = function(){ goToReveal(); };
+
+    pollTimer = setInterval(pollAnswerCount, 1000);
+    pollAnswerCount();
+
+    var started = Date.now();
+    storeGet('qz:'+S.pin+':state').then(function(st){ if(st) started = st.questionStartedAt; });
+
+    questionTickTimer = setInterval(function(){
+      var elapsed = (Date.now() - started) / 1000;
+      var pct = Math.max(0, 100 * (1 - elapsed / S.meta.timeLimit));
+      var fill = document.getElementById('tfill');
+      if(fill) fill.style.width = pct + '%';
+      if(elapsed >= S.meta.timeLimit){
+        goToReveal();
+      }
+    }, 200);
+  }
+
+  async function pollAnswerCount(){
+    var keys = await storeList('qz:'+S.pin+':ans:'+S._qIndex+':');
+    hostAnswerCount = keys.length;
+    var el = document.getElementById('answeredCount');
+    if(el) el.textContent = '응답 ' + hostAnswerCount + '명';
+  }
+
+  async function goToReveal(){
+    clearTimers();
+    await storeSet('qz:'+S.pin+':state', { phase: 'reveal', qIndex: S._qIndex, questionStartedAt: 0 });
+    goto('host-reveal');
+  }
+
+  // ---------- HOST: reveal ----------
+  async function renderHostReveal(){
+    var qi = S._qIndex;
+    var q = S.meta.questions[qi];
+    app.innerHTML = navbarHtml('코드 <b>' + S.pin + '</b>') + '<main><div class="stage wide"><p class="sub">결과 집계 중...</p></div></main>';
+
+    var ansKeys = await storeList('qz:'+S.pin+':ans:'+qi+':');
+    var answers = [];
+    for(var i=0;i<ansKeys.length;i++){
+      var v = await storeGet(ansKeys[i]);
+      if(v) answers.push(v);
+    }
+    var counts = [0,0,0,0];
+    answers.forEach(function(a){ if(a.choice>=0 && a.choice<4) counts[a.choice]++; });
+    var total = answers.length || 1;
+
+    var pKeys = await storeList('qz:'+S.pin+':player:');
+    var players = [];
+    for(var j=0;j<pKeys.length;j++){
+      var pv = await storeGet(pKeys[j]);
+      if(pv) players.push(pv);
+    }
+    players.sort(function(a,b){ return b.score - a.score; });
+
+    var colorVars = ['var(--c-a)','var(--c-b)','var(--c-c)','var(--c-d)'];
+    var isLast = qi === S.meta.questions.length - 1;
+
+    var barsHtml = q.choices.map(function(c,i){
+      return '' +
+        '<div class="bar-row">' +
+          '<div class="barlabel"><span>' + (i===q.correct?'✓ ':'') + escapeHtml(c) + '</span><span>' + counts[i] + '명</span></div>' +
+          '<div class="bar-track"><div class="bar-fill" style="width:' + Math.round(counts[i]/total*100) + '%; background:' + colorVars[i] + ';"></div></div>' +
+        '</div>';
+    }).join('');
+
+    var leadHtml = players.slice(0,5).map(function(p,i){
+      return '' +
+        '<div class="lead-row">' +
+          '<span class="rank">' + (i+1) + '</span>' +
+          '<span class="name">' + medalTag(i) + escapeHtml(p.name) + '</span>' +
+          '<span class="score">' + p.score + '</span>' +
+        '</div>';
+    }).join('');
+
+    app.innerHTML =
+      navbarHtml('코드 <b>' + S.pin + '</b>') +
+      '<main><div class="stage wide">' +
+        '<div class="topbar"><span class="pinmini">문제 ' + (qi+1) + ' / ' + S.meta.questions.length + '</span><span></span></div>' +
+        '<div class="qtext">' + escapeHtml(q.text) + '</div>' +
+        barsHtml +
+        '<p class="sub" style="margin-top:18px;margin-bottom:8px;">현재 순위</p>' +
+        leadHtml +
+        '<button class="btn" id="nextBtn" style="margin-top:16px;">' + (isLast ? '최종 결과 보기' : '다음 문제') + '</button>' +
+      '</div></main>';
+    wireNavbar();
+
+    document.getElementById('nextBtn').onclick = async function(){
+      if(isLast){
+        await storeSet('qz:'+S.pin+':state', { phase: 'final', qIndex: qi, questionStartedAt: 0 });
+        goto('host-final');
+      } else {
+        var nextI = qi + 1;
+        S._qIndex = nextI;
+        await storeSet('qz:'+S.pin+':state', { phase: 'question', qIndex: nextI, questionStartedAt: Date.now() });
+        goto('host-question');
+      }
+    };
+  }
+
+  // ---------- HOST: final ----------
+  async function renderHostFinal(){
+    app.innerHTML = navbarHtml('코드 <b>' + S.pin + '</b>') + '<main><div class="stage wide"><p class="sub">최종 결과 불러오는 중...</p></div></main>';
+    var pKeys = await storeList('qz:'+S.pin+':player:');
+    var players = [];
+    for(var i=0;i<pKeys.length;i++){
+      var v = await storeGet(pKeys[i]);
+      if(v) players.push(v);
+    }
+    players.sort(function(a,b){ return b.score - a.score; });
+
+    var leadHtml = players.map(function(p,i){
+      return '' +
+        '<div class="lead-row">' +
+          '<span class="rank">' + (i+1) + '</span>' +
+          '<span class="name">' + medalTag(i) + escapeHtml(p.name) + '</span>' +
+          '<span class="score">' + p.score + '</span>' +
+        '</div>';
+    }).join('');
+
+    app.innerHTML =
+      navbarHtml('') +
+      '<main><div class="stage wide">' +
+        '<h1 class="title">최종 결과</h1>' +
+        '<p class="sub">수고하셨어요! 이 게임의 점수는 저장되지 않아요.</p>' +
+        leadHtml +
+        '<button class="btn" id="newGameBtn" style="margin-top:20px;">새 게임 만들기</button>' +
+      '</div></main>';
+    wireNavbar();
+    document.getElementById('newGameBtn').onclick = function(){ resetToHome(); };
+  }
+
+  // ---------- JOIN ----------
+  function renderJoin(){
+    app.innerHTML =
+      navbarHtml('') +
+      '<main><div class="stage">' +
+        '<h1 class="title">참가하기</h1>' +
+        '<p class="sub">진행자가 알려준 코드와 사용할 닉네임을 입력하세요.</p>' +
+        '<div class="field"><label class="flabel">참가 코드</label><input type="tel" id="pinInput" maxlength="4" placeholder="예: 4821" /></div>' +
+        '<div class="field"><label class="flabel">닉네임</label><input type="text" id="nameInput" maxlength="12" placeholder="닉네임" /></div>' +
+        '<button class="btn" id="joinBtn">참가하기</button>' +
+        '<div class="errmsg" id="joinErr"></div>' +
+        '<button class="btn ghost" id="backBtn" style="margin-top:10px;">뒤로가기</button>' +
+      '</div></main>';
+    wireNavbar();
+    document.getElementById('backBtn').onclick = function(){ resetToHome(); };
+    document.getElementById('joinBtn').onclick = async function(){
+      var pin = document.getElementById('pinInput').value.trim();
+      var name = document.getElementById('nameInput').value.trim();
+      var errEl = document.getElementById('joinErr');
+      if(!/^\d{4}$/.test(pin)){ errEl.textContent = '4자리 코드를 입력해주세요.'; return; }
+      if(!name){ errEl.textContent = '닉네임을 입력해주세요.'; return; }
+      errEl.textContent = '확인 중...';
+      var meta = await storeGet('qz:'+pin+':meta');
+      if(!meta){ errEl.textContent = '존재하지 않는 코드예요. 다시 확인해주세요.'; return; }
+      S.pin = pin;
+      S.meta = meta;
+      S.playerId = uid(8);
+      S.playerName = name;
+      S.role = 'player';
+      await storeSet('qz:'+pin+':player:'+S.playerId, { name: name, score: 0 });
+      goto('player-lobby');
+    };
+  }
+
+  // ---------- PLAYER: lobby ----------
+  function renderPlayerLobby(){
+    app.innerHTML =
+      navbarHtml('코드 <b>' + S.pin + '</b>') +
+      '<main><div class="stage">' +
+        '<div class="center-msg">' +
+          '<div class="big">⏳</div>' +
+          '<h1 class="title">' + escapeHtml(S.playerName) + '님, 준비됐어요!</h1>' +
+          '<p class="sub">진행자가 게임을 시작하면 바로 문제가 나와요.</p>' +
+        '</div>' +
+      '</div></main>';
+    wireNavbar();
+    pollTimer = setInterval(pollPlayerState, 1200);
+    pollPlayerState();
+  }
+
+  async function pollPlayerState(){
+    var st = await storeGet('qz:'+S.pin+':state');
+    if(!st) return;
+    if(st.phase === 'question'){
+      S._qIndex = st.qIndex;
+      S._questionStartedAt = st.questionStartedAt;
+      S.lastAnswer = null;
+      goto('player-question');
+    } else if(st.phase === 'final'){
+      goto('player-final');
+    }
+  }
+
+  // ---------- PLAYER: question ----------
+  function renderPlayerQuestion(){
+    var qi = S._qIndex;
+    var q = S.meta.questions[qi];
+    var choicesHtml = q.choices.map(function(c,i){
+      return '<button class="choice-btn ' + ['a','b','c','d'][i] + '" data-i="' + i + '">' + escapeHtml(c) + '</button>';
+    }).join('');
+
+    app.innerHTML =
+      navbarHtml('') +
+      '<main><div class="stage">' +
+        '<div class="timerbar-track"><div class="timerbar-fill" id="tfill" style="width:100%"></div></div>' +
+        '<div class="qtext">' + escapeHtml(q.text) + '</div>' +
+        '<div class="choices-grid" id="choiceGrid">' + choicesHtml + '</div>' +
+      '</div></main>';
+    wireNavbar();
+
+    document.querySelectorAll('#choiceGrid .choice-btn').forEach(function(btn){
+      btn.onclick = function(){ submitAnswer(+btn.dataset.i); };
+    });
+
+    questionTickTimer = setInterval(function(){
+      var elapsed = (Date.now() - S._questionStartedAt) / 1000;
+      var pct = Math.max(0, 100 * (1 - elapsed / S.meta.timeLimit));
+      var fill = document.getElementById('tfill');
+      if(fill) fill.style.width = pct + '%';
+      if(elapsed >= S.meta.timeLimit){
+        clearInterval(questionTickTimer);
+        if(!S.lastAnswer){ goto('player-waiting'); }
+      }
+    }, 200);
+
+    pollTimer = setInterval(async function(){
+      var st = await storeGet('qz:'+S.pin+':state');
+      if(st && st.phase === 'reveal' && st.qIndex === qi){
+        goto('player-reveal');
+      }
+    }, 1000);
+  }
+
+  async function submitAnswer(choiceIdx){
+    var qi = S._qIndex;
+    var q = S.meta.questions[qi];
+    document.querySelectorAll('#choiceGrid .choice-btn').forEach(function(b){
+      b.disabled = true;
+      if(+b.dataset.i !== choiceIdx) b.classList.add('dim');
+      else b.classList.add('picked');
+    });
+
+    var elapsedSec = Math.min((Date.now() - S._questionStartedAt) / 1000, S.meta.timeLimit);
+    var isCorrect = choiceIdx === q.correct;
+    var speedRatio = Math.max(0, 1 - elapsedSec / S.meta.timeLimit);
+    var points = isCorrect ? Math.round(500 + 500 * speedRatio) : 0;
+
+    S.lastAnswer = { choice: choiceIdx, points: points, correct: isCorrect };
+    await storeSet('qz:'+S.pin+':ans:'+qi+':'+S.playerId, { choice: choiceIdx, points: points, answeredAt: Date.now() });
+
+    var me = await storeGet('qz:'+S.pin+':player:'+S.playerId);
+    if(me){
+      me.score = (me.score || 0) + points;
+      await storeSet('qz:'+S.pin+':player:'+S.playerId, me);
+    }
+
+    setTimeout(function(){ if(S.screen === 'player-question') goto('player-waiting'); }, 500);
+  }
+
+  function renderPlayerWaiting(){
+    app.innerHTML =
+      navbarHtml('') +
+      '<main><div class="stage">' +
+        '<div class="center-msg">' +
+          '<div class="big">✅</div>' +
+          '<h1 class="title">제출 완료!</h1>' +
+          '<p class="sub">다른 사람들이 답하는 중이에요. 결과를 기다려주세요.</p>' +
+        '</div>' +
+      '</div></main>';
+    wireNavbar();
+    pollTimer = setInterval(async function(){
+      var st = await storeGet('qz:'+S.pin+':state');
+      if(st && st.phase === 'reveal' && st.qIndex === S._qIndex){
+        goto('player-reveal');
+      }
+    }, 1000);
+  }
+
+  // ---------- PLAYER: reveal ----------
+  function renderPlayerReveal(){
+    var a = S.lastAnswer;
+    var correct = a ? a.correct : false;
+    var points = a ? a.points : 0;
+
+    app.innerHTML =
+      navbarHtml('') +
+      '<main><div class="stage">' +
+        '<div class="center-msg">' +
+          '<div class="big">' + (a ? (correct ? '🎉' : '😵') : '⌛') + '</div>' +
+          '<h1 class="title">' + (a ? (correct ? '정답이에요!' : '아쉬워요') : '시간 초과') + '</h1>' +
+          '<p class="sub">' + (a ? ('+' + points + '점 획득') : '이번 문제는 응답하지 못했어요.') + '</p>' +
+        '</div>' +
+      '</div></main>';
+    wireNavbar();
+
+    pollTimer = setInterval(async function(){
+      var st = await storeGet('qz:'+S.pin+':state');
+      if(!st) return;
+      if(st.phase === 'question' && st.qIndex !== S._qIndex){
+        S._qIndex = st.qIndex;
+        S._questionStartedAt = st.questionStartedAt;
+        S.lastAnswer = null;
+        goto('player-question');
+      } else if(st.phase === 'final'){
+        goto('player-final');
+      }
+    }, 1200);
+  }
+
+  // ---------- PLAYER: final ----------
+  async function renderPlayerFinal(){
+    app.innerHTML = navbarHtml('') + '<main><div class="stage"><p class="sub">최종 결과 불러오는 중...</p></div></main>';
+    var myKey = 'qz:'+S.pin+':player:'+S.playerId;
+    var pKeys = await storeList('qz:'+S.pin+':player:');
+    var players = [];
+    for(var i=0;i<pKeys.length;i++){
+      var v = await storeGet(pKeys[i]);
+      if(v) players.push({ name: v.name, score: v.score, isMe: pKeys[i] === myKey });
+    }
+    players.sort(function(a,b){ return b.score - a.score; });
+    var myRank = players.findIndex(function(p){ return p.isMe; }) + 1;
+
+    var leadHtml = players.map(function(p,i){
+      return '' +
+        '<div class="lead-row ' + (p.isMe?'me':'') + '">' +
+          '<span class="rank">' + (i+1) + '</span>' +
+          '<span class="name">' + medalTag(i) + escapeHtml(p.name) + (p.isMe?' (나)':'') + '</span>' +
+          '<span class="score">' + p.score + '</span>' +
+        '</div>';
+    }).join('');
+
+    app.innerHTML =
+      navbarHtml('') +
+      '<main><div class="stage">' +
+        '<div class="center-msg" style="margin-bottom:16px;padding:16px 0;">' +
+          '<div class="big">🏁</div>' +
+          '<h1 class="title">최종 순위 ' + myRank + '위</h1>' +
+          '<p class="sub">수고하셨어요!</p>' +
+        '</div>' +
+        leadHtml +
+      '</div></main>';
+    wireNavbar();
+  }
+
+  // ---------- reset ----------
+  function resetToHome(){
+    clearTimers();
+    S.screen = 'home';
+    S.role = null;
+    S.pin = null;
+    S.playerId = null;
+    S.playerName = '';
+    S.meta = null;
+    S.draftQuestions = null;
+    S.lastAnswer = null;
+    S._qIndex = 0;
+    render();
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
