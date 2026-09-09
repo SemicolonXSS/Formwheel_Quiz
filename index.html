@@ -119,6 +119,7 @@
   .btn:active { transform: scale(0.98); }
   .btn.ghost { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
   .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn.small { padding: 10px 14px; font-size: 13.5px; width: auto; }
 
   .home-choice { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
   .home-card {
@@ -128,6 +129,25 @@
   .home-card h3 { margin: 0 0 4px; font-size: 17px; font-weight: 700; }
   .home-card p { margin: 0; color: var(--muted); font-size: 13.5px; }
   .home-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+  .draft-card {
+    background: var(--accent-soft); border: 1.5px solid var(--accent);
+    border-radius: 14px; padding: 16px 18px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .draft-card .dinfo { flex: 1; min-width: 0; }
+  .draft-card .dtitle { font-weight: 700; font-size: 14.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .draft-card .dmeta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .draft-card .dactions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    border: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text);
+  }
+  .icon-btn.danger { color: var(--bad); }
+
+  .save-status { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-top: -8px; margin-bottom: 16px; }
+  .save-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); flex-shrink: 0; }
+  .save-status.saving .dot { background: var(--c-c); }
 
   .pin-box {
     background: var(--accent-soft); border: 1.5px dashed var(--accent);
@@ -248,6 +268,17 @@
     var m = ['🥇','🥈','🥉'][i];
     return m ? '<span class="medal">' + m + '</span>' : '';
   }
+  function timeAgoLabel(ts){
+    if(!ts) return '';
+    var diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if(diffSec < 60) return '방금 전';
+    var diffMin = Math.floor(diffSec / 60);
+    if(diffMin < 60) return diffMin + '분 전';
+    var diffHr = Math.floor(diffMin / 60);
+    if(diffHr < 24) return diffHr + '시간 전';
+    var diffDay = Math.floor(diffHr / 24);
+    return diffDay + '일 전';
+  }
 
   async function storeGet(key){
     if(!fbReady) return null;
@@ -292,6 +323,79 @@
     }
   }
 
+  // ---------- local draft (temporary save) ----------
+  var DRAFT_STORAGE_KEY = 'formwheel_quiz_drafts_v1';
+  var draftAutosaveTimer = null;
+  var currentDraftId = null;
+
+  function loadLocalDrafts(){
+    try{
+      var raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+      var parsed = raw ? JSON.parse(raw) : {};
+      return (parsed && typeof parsed === 'object') ? parsed : {};
+    }catch(e){
+      return {};
+    }
+  }
+  function saveLocalDrafts(drafts){
+    try{
+      window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+  function upsertLocalDraft(id, data){
+    var drafts = loadLocalDrafts();
+    drafts[id] = data;
+    return saveLocalDrafts(drafts);
+  }
+  function deleteLocalDraft(id){
+    var drafts = loadLocalDrafts();
+    delete drafts[id];
+    saveLocalDrafts(drafts);
+  }
+  function listLocalDrafts(){
+    var drafts = loadLocalDrafts();
+    return Object.keys(drafts).map(function(id){
+      var d = drafts[id];
+      return {
+        id: id,
+        title: d.title || '',
+        questionCount: (d.questions || []).length,
+        timeLimit: d.timeLimit,
+        savedAt: d.savedAt || 0
+      };
+    }).sort(function(a,b){ return b.savedAt - a.savedAt; });
+  }
+
+  function scheduleDraftAutosave(){
+    var statusEl = document.getElementById('saveStatus');
+    if(statusEl){
+      statusEl.classList.add('saving');
+      statusEl.querySelector('.stext').textContent = '저장 중...';
+    }
+    if(draftAutosaveTimer) clearTimeout(draftAutosaveTimer);
+    draftAutosaveTimer = setTimeout(function(){
+      persistCurrentDraft();
+    }, 600);
+  }
+  function persistCurrentDraft(){
+    if(!currentDraftId) currentDraftId = uid(10);
+    var savedAt = Date.now();
+    upsertLocalDraft(currentDraftId, {
+      title: S.draftTitle || '',
+      timeLimit: draftTimeLimit,
+      questions: S.draftQuestions,
+      savedAt: savedAt
+    });
+    var statusEl = document.getElementById('saveStatus');
+    if(statusEl){
+      statusEl.classList.remove('saving');
+      statusEl.querySelector('.stext').textContent = '임시저장됨 · ' + timeAgoLabel(savedAt);
+    }
+  }
+
   // ---------- app state ----------
   var app = document.getElementById('app');
   var pollTimer = null;
@@ -308,6 +412,7 @@
     playerName: '',
     meta: null,
     draftQuestions: null,
+    draftTitle: '',
     lastAnswer: null,
     _qIndex: 0,
     _questionStartedAt: 0
@@ -316,6 +421,7 @@
   function clearTimers(){
     if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
     if(questionTickTimer){ clearInterval(questionTickTimer); questionTickTimer = null; }
+    if(draftAutosaveTimer){ clearTimeout(draftAutosaveTimer); draftAutosaveTimer = null; }
   }
 
   function goto(screen){
@@ -376,11 +482,28 @@
 
   // ---------- HOME ----------
   function renderHome(){
+    var drafts = listLocalDrafts();
+    var draftsHtml = drafts.length ? drafts.map(function(d){
+      var titleLabel = d.title.trim() || '제목 없는 Quiz';
+      return '' +
+        '<div class="draft-card" data-id="' + d.id + '">' +
+          '<div class="dinfo">' +
+            '<div class="dtitle">' + escapeHtml(titleLabel) + '</div>' +
+            '<div class="dmeta">문제 ' + d.questionCount + '개 · ' + timeAgoLabel(d.savedAt) + ' 저장됨</div>' +
+          '</div>' +
+          '<div class="dactions">' +
+            '<button class="icon-btn resume-draft" data-id="' + d.id + '">이어하기</button>' +
+            '<button class="icon-btn danger delete-draft" data-id="' + d.id + '">삭제</button>' +
+          '</div>' +
+        '</div>';
+    }).join('') : '';
+
     app.innerHTML =
       navbarHtml('') +
       '<main><div class="stage">' +
         '<h1 class="title">Quiz 만들기</h1>' +
         '<p class="sub">각자 폰이나 PC로 접속해서 실시간으로 맞히는 퀴즈예요. 이 게임의 점수는 저장되지 않고, 창을 닫으면 사라져요.</p>' +
+        draftsHtml +
         '<div class="home-choice">' +
           '<div class="home-card" id="pickHost"><h3>퀴즈 만들기</h3><p>문제를 준비하고 참가 코드를 발급해요. 큰 화면(발표용)에 띄워두세요.</p></div>' +
           '<div class="home-card" id="pickJoin"><h3>참가하기</h3><p>진행자에게 받은 코드를 입력하고 닉네임으로 들어가요.</p></div>' +
@@ -388,10 +511,35 @@
       '</div></main>';
     wireNavbar();
     document.getElementById('pickHost').onclick = function(){
+      currentDraftId = null;
       S.draftQuestions = defaultQuestions();
+      S.draftTitle = '';
+      draftTimeLimit = 20;
       goto('host-setup');
     };
     document.getElementById('pickJoin').onclick = function(){ goto('join'); };
+
+    document.querySelectorAll('.resume-draft').forEach(function(btn){
+      btn.onclick = function(e){
+        e.stopPropagation();
+        var id = btn.dataset.id;
+        var drafts = loadLocalDrafts();
+        var d = drafts[id];
+        if(!d) return;
+        currentDraftId = id;
+        S.draftQuestions = (d.questions && d.questions.length) ? d.questions : defaultQuestions();
+        S.draftTitle = d.title || '';
+        draftTimeLimit = d.timeLimit || 20;
+        goto('host-setup');
+      };
+    });
+    document.querySelectorAll('.delete-draft').forEach(function(btn){
+      btn.onclick = function(e){
+        e.stopPropagation();
+        deleteLocalDraft(btn.dataset.id);
+        renderHome();
+      };
+    });
   }
 
   // ---------- HOST: setup ----------
@@ -406,10 +554,12 @@
       '<main><div class="stage">' +
         '<h1 class="title">문제 준비하기</h1>' +
         '<p class="sub">문제와 보기 4개, 정답을 정해주세요. 필요하면 문제를 더 추가하거나 지울 수 있어요.</p>' +
+        '<div class="save-status" id="saveStatus"><span class="dot"></span><span class="stext">이 브라우저에 자동으로 임시저장돼요</span></div>' +
         '<div class="field"><label class="flabel">Quiz 제목</label><input type="text" id="quizTitleInput" maxlength="30" placeholder="예: 상식 퀴즈" value="' + escapeHtml(S.draftTitle || '') + '" /></div>' +
         '<div class="field"><label class="flabel">문제당 제한 시간</label><div class="seglist" id="timeSeg">' + timeSegHtml + '</div></div>' +
         '<div id="qlist"></div>' +
-        '<button class="btn ghost" id="addQ" style="margin-bottom:18px;">질문 추가</button>' +
+        '<button class="btn ghost" id="addQ" style="margin-bottom:12px;">질문 추가</button>' +
+        '<button class="btn ghost" id="saveDraftBtn" style="margin-bottom:18px;">지금 임시저장</button>' +
         '<button class="btn" id="createGame">게임 만들고 코드 받기</button>' +
         '<div class="errmsg" id="createErr"></div>' +
       '</div></main>';
@@ -434,27 +584,42 @@
     }).join('');
 
     document.getElementById('timeSeg').querySelectorAll('.seg-btn').forEach(function(el){
-      el.onclick = function(){ draftTimeLimit = parseInt(el.dataset.t, 10); renderHostSetup(); };
+      el.onclick = function(){ draftTimeLimit = parseInt(el.dataset.t, 10); renderHostSetup(); scheduleDraftAutosave(); };
     });
     qlist.querySelectorAll('.qtext-input').forEach(function(el){
-      el.oninput = function(){ qs[+el.dataset.qi].text = el.value; };
+      el.oninput = function(){ qs[+el.dataset.qi].text = el.value; scheduleDraftAutosave(); };
     });
     qlist.querySelectorAll('.choice-input').forEach(function(el){
-      el.oninput = function(){ qs[+el.dataset.qi].choices[+el.dataset.ci] = el.value; };
+      el.oninput = function(){ qs[+el.dataset.qi].choices[+el.dataset.ci] = el.value; scheduleDraftAutosave(); };
     });
     qlist.querySelectorAll('.correct-radio').forEach(function(el){
-      el.onchange = function(){ qs[+el.dataset.qi].correct = +el.dataset.ci; };
+      el.onchange = function(){ qs[+el.dataset.qi].correct = +el.dataset.ci; scheduleDraftAutosave(); };
     });
     qlist.querySelectorAll('.remove-link').forEach(function(el){
-      el.onclick = function(){ qs.splice(+el.dataset.qi, 1); renderHostSetup(); };
+      el.onclick = function(){ qs.splice(+el.dataset.qi, 1); renderHostSetup(); scheduleDraftAutosave(); };
     });
     document.getElementById('addQ').onclick = function(){
       qs.push({ text: '', choices: ['','','',''], correct: 0 });
       renderHostSetup();
+      scheduleDraftAutosave();
     };
     document.getElementById('quizTitleInput').oninput = function(){
       S.draftTitle = this.value;
+      scheduleDraftAutosave();
     };
+    document.getElementById('saveDraftBtn').onclick = function(){
+      persistCurrentDraft();
+    };
+
+    // if this draft was loaded (or already autosaved once), show its last-saved time
+    if(currentDraftId){
+      var drafts = loadLocalDrafts();
+      var existing = drafts[currentDraftId];
+      if(existing && existing.savedAt){
+        var statusEl = document.getElementById('saveStatus');
+        if(statusEl) statusEl.querySelector('.stext').textContent = '임시저장됨 · ' + timeAgoLabel(existing.savedAt);
+      }
+    }
 
     document.getElementById('createGame').onclick = async function(){
       var errEl = document.getElementById('createErr');
@@ -486,6 +651,10 @@
         timeLimit: S.meta.timeLimit,
         createdAt: Date.now()
       });
+      // 임시저장은 게임을 배포해도 삭제하지 않고 그대로 유지합니다.
+      if(currentDraftId){
+        persistCurrentDraft();
+      }
       S.role = 'host';
       S._qIndex = 0;
       goto('host-lobby');
@@ -909,6 +1078,7 @@
   // ---------- reset ----------
   function resetToHome(){
     clearTimers();
+    currentDraftId = null;
     S.screen = 'home';
     S.role = null;
     S.pin = null;
