@@ -973,18 +973,26 @@
       else b.classList.add('picked');
     });
 
-    var elapsedSec = Math.min((Date.now() - S._questionStartedAt) / 1000, S.meta.timeLimit);
-    var isCorrect = choiceIdx === q.correct;
+    var elapsedSec = Math.max(0, (Date.now() - S._questionStartedAt) / 1000);
+    var isCorrect = choiceIdx === q.correct && elapsedSec <= S.meta.timeLimit;
     var speedRatio = Math.max(0, 1 - elapsedSec / S.meta.timeLimit);
     var points = isCorrect ? Math.round(500 + 500 * speedRatio) : 0;
 
-    S.lastAnswer = { choice: choiceIdx, points: points, correct: isCorrect };
-    await storeSet('qz:'+S.pin+':ans:'+qi+':'+S.playerId, { choice: choiceIdx, points: points, answeredAt: Date.now() });
-
-    var me = await storeGet('qz:'+S.pin+':player:'+S.playerId);
-    if(me){
-      me.score = (me.score || 0) + points;
-      await storeSet('qz:'+S.pin+':player:'+S.playerId, me);
+    var answerKey='qz:'+S.pin+':ans:'+qi+':'+S.playerId;
+    var playerKey='qz:'+S.pin+':player:'+S.playerId;
+    if(!fbReady){alert('온라인 연결 후 다시 제출해주세요.');return;}
+    try{
+      var result=await db.ref('data').transaction(function(data){
+        if(!data || data[answerKey] || !data[playerKey])return;
+        data[answerKey]={choice:choiceIdx,points:points,answeredAt:Date.now()};
+        data[playerKey].score=Number(data[playerKey].score||0)+points;
+        return data;
+      },undefined,false);
+      if(result.committed)S.lastAnswer={choice:choiceIdx,points:points,correct:isCorrect};
+      else {var existing=await storeGet(answerKey);if(existing)S.lastAnswer={choice:existing.choice,points:existing.points,correct:existing.choice===q.correct};}
+    }catch(error){
+      document.querySelectorAll('#choiceGrid .choice-btn').forEach(function(b){b.disabled=false});
+      alert('답안 저장에 실패했습니다. 다시 제출해주세요.');return;
     }
 
     setTimeout(function(){ if(S.screen === 'player-question') goto('player-waiting'); }, 500);
@@ -1097,3 +1105,4 @@
 </script>
 </body>
 </html>
+
