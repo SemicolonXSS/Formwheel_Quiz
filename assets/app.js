@@ -213,17 +213,15 @@
   function navbarHtml(rightText){
     return '' +
       '<div class="navbar">' +
-        '<button class="brand" id="brandBtn">' +
-          '<span class="mark">F</span>' +
-          '<span class="wordmark">FormWheel</span>' +
-          '<span class="tag">Quiz</span>' +
+        '<button class="brand fw-hub-logo" id="brandBtn" aria-label="FormWheel 메인으로 이동">' +
+          '<span class="fw-hub-form">Form</span><span class="fw-hub-icon" aria-hidden="true"></span><span class="fw-hub-wheel">Wheel</span>' +
         '</button>' +
         '<span class="nav-meta">' + (rightText || '') + '</span>' +
       '</div>';
   }
   function wireNavbar(){
     var b = document.getElementById('brandBtn');
-    if(b) b.onclick = function(){ window.open(FORMWHEEL_HOME, '_blank'); };
+    if(b) b.onclick = function(){ window.location.href = FORMWHEEL_HOME; };
   }
 
   // ---------- render router ----------
