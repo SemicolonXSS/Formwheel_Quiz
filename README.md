@@ -1,10 +1,10 @@
 # Formwheel_Quiz
 
----
+퀴즈를 만들고 다른 사람들과 함께 풀어보는 서비스.
 
 ## 2026-10-08 개발·운영 안내
 
-Formwheel 프로젝트와 게임을 모아 실행하는 홈 화면.
+퀴즈를 만들고 다른 사람들과 함께 풀어보는 서비스.
 
 - 실행: https://semicolonxss.github.io/Formwheel_Quiz/
 - 프로젝트 목록: https://semicolonxss.github.io/Formwheel/
