@@ -637,7 +637,7 @@
       '<main><div class="stage">' +
         '<h1 class="title">참가하기</h1>' +
         '<p class="sub">진행자가 알려준 코드와 사용할 닉네임을 입력하세요.</p>' +
-        '<div class="field"><label class="flabel">참가 코드</label><input type="tel" id="pinInput" maxlength="4" placeholder="예: 4821" /></div>' +
+        '<div class="field"><label class="flabel">참가 코드</label><input type="text" inputmode="text" id="pinInput" maxlength="4" autocomplete="off" placeholder="예: 4821" /></div>' +
         '<div class="field"><label class="flabel">닉네임</label><input type="text" id="nameInput" maxlength="12" placeholder="닉네임" /></div>' +
         '<button class="btn" id="joinBtn">참가하기</button>' +
         '<div class="errmsg" id="joinErr"></div>' +
@@ -647,6 +647,7 @@
     document.getElementById('backBtn').onclick = function(){ resetToHome(); };
     document.getElementById('joinBtn').onclick = async function(){
       var pin = document.getElementById('pinInput').value.trim();
+      if(pin.toUpperCase() === 'ECHO'){ window.location.href = './echo.html'; return; }
       var name = document.getElementById('nameInput').value.trim();
       var errEl = document.getElementById('joinErr');
       if(!/^\d{4}$/.test(pin)){ errEl.textContent = '4자리 코드를 입력해주세요.'; return; }
