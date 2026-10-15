@@ -8,8 +8,33 @@ const Q=[
 ["[ECHO_05] 마지막 검증. 지금까지의 CALLSIGN, MIRROR, OFFSET을 이 순서대로 하이픈(-)으로 연결하면?",["ECHO-EG-CE","RPUB-CE-EG","ECHO-CE-EG","ECHO-EC-EG"],2,"TRANSMISSION VERIFIED"]
 ];
 let pos=0,score=0,locked=false,recovered=[];const $=s=>document.querySelector(s);
-function question(){locked=false;$("#counter").textContent="SIGNAL "+String(pos+1).padStart(2,"0")+" / 05";$("#bar").style.width=(pos/Q.length*100)+"%";$("#question").textContent=Q[pos][0];$("#log").textContent=recovered.length?"RECOVERED LOG // "+recovered.join(" | "):"RECOVERED LOG // NO SIGNAL";const box=$("#answers");box.replaceChildren();Q[pos][2].forEach((a,i)=>{const b=document.createElement("button");b.textContent=String(i+1).padStart(2,"0")+"  "+a;b.onclick=()=>choose(i);box.append(b)});$("#status").textContent=""}
-function choose(i){if(locked)return;locked=true;const good=i===Q[pos][3];if(good){score++;recovered.push(Q[pos][4]);}$("#status").textContent=good?"SIGNAL ACCEPTED":"SIGNAL LOST";[...$("#answers").children].forEach(b=>b.disabled=true);setTimeout(()=>{pos++;if(pos<Q.length)question();else finish()},560)}
+function normalize(s){return String(s).trim().toUpperCase().replace(/\s+/g,"");}
+function question(){
+ locked=false;
+ $("#counter").textContent="SIGNAL "+String(pos+1).padStart(2,"0")+" / 05";
+ $("#bar").style.width=(pos/Q.length*100)+"%";
+ $("#question").textContent=Q[pos][0];
+ $("#log").textContent=recovered.length?"RECOVERED LOG // "+recovered.join(" | "):"RECOVERED LOG // NO SIGNAL";
+ const box=$("#answers");box.replaceChildren();
+ const form=document.createElement("form");form.id="echo-answer-form";
+ const label=document.createElement("label");label.setAttribute("for","echo-answer");label.textContent="복원한 답안 입력";
+ const input=document.createElement("input");input.id="echo-answer";input.type="text";input.autocomplete="off";input.spellcheck=false;input.required=true;input.maxLength=64;input.placeholder="정답을 직접 입력하세요";
+ input.style.cssText="display:block;width:100%;padding:15px;margin:10px 0;background:#0b1427;color:#fff;border:1px solid #60729e;border-radius:10px;font:inherit";
+ const button=document.createElement("button");button.type="submit";button.textContent="신호 전송 →";
+ form.append(label,input,button);form.onsubmit=e=>{e.preventDefault();choose(input.value)};
+ box.append(form);$("#status").textContent="";
+}
+function choose(value){
+ if(locked)return;
+ const correct=Q[pos][1][Q[pos][2]];
+ const good=normalize(value)===normalize(correct);
+ locked=true;
+ if(good){score++;recovered.push(Q[pos][3]);}
+ $("#status").textContent=good?"SIGNAL ACCEPTED":"SIGNAL LOST";
+ const submit=$("#echo-answer-form button");if(submit)submit.disabled=true;
+ const input=$("#echo-answer");if(input)input.disabled=true;
+ setTimeout(()=>{pos++;if(pos<Q.length)question();else finish()},750);
+}
 function finish(){$("#game").classList.add("hidden");$("#end").classList.remove("hidden");$("#bar").style.width="100%";const won=score===Q.length;$("#result").textContent=won?"ECHO // PERFECT":"TRANSMISSION INCOMPLETE";$("#summary").textContent=score+" / "+Q.length+" · "+(won?"모든 신호를 복원했어. Secret의 비밀을 발견했어.":"흩어진 신호를 다시 연결해 봐.");$("#secret").classList.toggle("hidden",!won);if(won){try{const key="formwheel.secret.v1",v=JSON.parse(localStorage.getItem(key)||"{}");v[6]={date:new Date().toLocaleDateString("ko-KR"),source:"quiz-echo"};localStorage.setItem(key,JSON.stringify(v))}catch{$("#summary").textContent+=" 단, 브라우저 저장이 차단돼 기록을 저장하지 못했어."}}}
 function start(){pos=0;score=0;recovered=[];$("#intro").classList.add("hidden");$("#end").classList.add("hidden");$("#game").classList.remove("hidden");question()}
 $("#start").onclick=start;$("#retry").onclick=start;
