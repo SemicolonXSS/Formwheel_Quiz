@@ -14,6 +14,9 @@
   };
   var db = null;
   var fbReady = false;
+  var IDENTITIES = ['ECHO','NOVA','VOID','RIFT'];
+  var identityMode = 'number';
+  function chosenIdentity(){try{var x=JSON.parse(localStorage.getItem('formwheel.aqs.v1')||'{}').identity;return IDENTITIES.includes(x)?x:''}catch(e){return ''}}
   try{
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
@@ -326,6 +329,7 @@
         '<div class="save-status" id="saveStatus"><span class="dot"></span><span class="stext">이 브라우저에 자동으로 임시저장돼요</span></div>' +
         '<div class="field"><label class="flabel">Quiz 제목</label><input type="text" id="quizTitleInput" maxlength="30" placeholder="예: 상식 퀴즈" value="' + escapeHtml(S.draftTitle || '') + '" /></div>' +
         '<div class="field"><label class="flabel">문제당 제한 시간</label><div class="seglist" id="timeSeg">' + timeSegHtml + '</div></div>' +
+        '<div class="field"><label class="flabel">참가 코드 유형</label><select id="identityMode" class="choice-input" style="width:100%;padding:12px;border-radius:10px"><option value="number">기본 숫자 코드</option>'+IDENTITIES.map(function(id){return '<option value="'+id+'" '+(identityMode===id?'selected':'')+'>'+id+' Identity 공개 방</option>'}).join('')+'</select><p class="sub" style="margin:7px 0 0">Identity 방도 별도의 숫자 코드가 생성되며, 같은 Identity로 여러 방을 만들 수 있어요.</p></div>' +
         '<div id="qlist"></div>' +
         '<button class="btn ghost" id="addQ" style="margin-bottom:12px;">질문 추가</button>' +
         '<button class="btn ghost" id="saveDraftBtn" style="margin-bottom:18px;">지금 임시저장</button>' +
@@ -334,6 +338,8 @@
       '</div></main>';
     wireNavbar();
 
+    document.getElementById('identityMode').value=identityMode;
+    document.getElementById('identityMode').onchange=function(){identityMode=this.value};
     var qlist = document.getElementById('qlist');
     qlist.innerHTML = qs.map(function(q, qi){
       var choicesHtml = q.choices.map(function(c, ci){
@@ -414,6 +420,8 @@
       S.meta = { questions: qs.map(function(q){ return { text: q.text, choices: q.choices.slice(), correct: q.correct }; }), timeLimit: draftTimeLimit };
       await storeSet('qz:'+pin+':meta', S.meta);
       await storeSet('qz:'+pin+':state', { phase: 'lobby', qIndex: -1, questionStartedAt: 0 });
+      if(IDENTITIES.includes(identityMode)){var published=await storeSet('qz:identity:'+identityMode+':'+pin,{pin:pin,identity:identityMode,createdAt:Date.now()});if(!published){errEl.textContent='방은 만들어졌지만 Identity 목록 등록에 실패했어요. 숫자 코드 '+pin+'으로 참가할 수 있어요.';}}
+      
       saveToLibrary(uid(10), {
         title: (S.draftTitle || '').trim() || '제목 없는 Quiz',
         questions: S.meta.questions,
@@ -637,7 +645,8 @@
       '<main><div class="stage">' +
         '<h1 class="title">참가하기</h1>' +
         '<p class="sub">진행자가 알려준 코드와 사용할 닉네임을 입력하세요.</p>' +
-        '<div class="field"><label class="flabel">참가 코드</label><input type="text" inputmode="text" id="pinInput" maxlength="4" autocomplete="off" placeholder="예: 4821" /></div>' +
+        '<div class="field"><label class="flabel">참가 코드</label><input type="text" inputmode="text" id="pinInput" maxlength="4" autocomplete="off" placeholder="4821 또는 ECHO" /></div>' +
+        '<div id="identityOptions" class="card" style="display:none;margin-bottom:14px"></div>' +
         '<div class="field"><label class="flabel">닉네임</label><input type="text" id="nameInput" maxlength="12" placeholder="닉네임" /></div>' +
         '<button class="btn" id="joinBtn">참가하기</button>' +
         '<div class="errmsg" id="joinErr"></div>' +
@@ -647,7 +656,7 @@
     document.getElementById('backBtn').onclick = function(){ resetToHome(); };
     document.getElementById('joinBtn').onclick = async function(){
       var pin = document.getElementById('pinInput').value.trim();
-      if(pin.toUpperCase() === 'ECHO'){ window.location.href = './echo.html'; return; }
+      if(IDENTITIES.includes(pin.toUpperCase())){await showIdentityOptions(pin.toUpperCase());return;}
       var name = document.getElementById('nameInput').value.trim();
       var errEl = document.getElementById('joinErr');
       if(!/^\d{4}$/.test(pin)){ errEl.textContent = '4자리 코드를 입력해주세요.'; return; }
@@ -663,6 +672,15 @@
       await storeSet('qz:'+pin+':player:'+S.playerId, { name: name, score: 0 });
       goto('player-lobby');
     };
+  }
+
+  async function showIdentityOptions(id){
+    var box=document.getElementById('identityOptions');box.style.display='block';box.innerHTML='<h3>'+id+' Identity</h3><p class="sub">특별 퀴즈를 시작하거나 공개 방에 참가할 수 있어요.</p><button class="btn" id="specialQuiz">'+id+' 특별 퀴즈</button><div id="identityRooms" style="margin-top:12px">공개 방 확인 중…</div>';
+    document.getElementById('specialQuiz').onclick=function(){location.href='./orbit-quiz.html?identity='+id};
+    var keys=await storeList('qz:identity:'+id+':');var roomHtml=[];
+    for(var i=0;i<keys.length;i++){var entry=await storeGet(keys[i]);if(!entry||!/^\d{4}$/.test(String(entry.pin)))continue;var state=await storeGet('qz:'+entry.pin+':state');if(state&&state.phase==='lobby')roomHtml.push('<button class="btn ghost identity-join" data-pin="'+entry.pin+'" style="margin:5px 0">방 '+entry.pin+' 참가</button>')}
+    document.getElementById('identityRooms').innerHTML=roomHtml.length?roomHtml.join(''):'현재 참가 가능한 공개 방이 없어요.';
+    document.querySelectorAll('.identity-join').forEach(function(b){b.onclick=function(){document.getElementById('pinInput').value=b.dataset.pin;document.getElementById('joinBtn').click()}});
   }
 
   // ---------- PLAYER: lobby ----------
