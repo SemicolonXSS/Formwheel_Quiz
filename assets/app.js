@@ -675,8 +675,9 @@
   }
 
   async function showIdentityOptions(id){
-    var box=document.getElementById('identityOptions');box.style.display='block';box.innerHTML='<h3>'+id+' Identity</h3><p class="sub">특별 퀴즈를 시작하거나 공개 방에 참가할 수 있어요.</p><button class="btn" id="specialQuiz">'+id+' 특별 퀴즈</button><div id="identityRooms" style="margin-top:12px">공개 방 확인 중…</div>';
-    document.getElementById('specialQuiz').onclick=function(){location.href='./orbit-quiz.html?identity='+id};
+    var box=document.getElementById('identityOptions');box.style.display='block';box.innerHTML='<h3>'+id+' Identity</h3><p class="sub">'+(id==='ECHO'?'공개 방 목록입니다.':'특별 퀴즈를 시작하거나 공개 방에 참가할 수 있어요.')+'</p>'+(id==='ECHO'?'<details style="margin:0 0 12px;font-size:11px;color:#817a94"><summary style="cursor:pointer;width:max-content;opacity:.55" aria-label="숨겨진 신호">···</summary><p style="font-size:12px">되돌아오는 것은 언제나 같은 모습일까?</p><button type="button" id="echoSignal" class="btn ghost small" style="opacity:.8">신호 따라가기 ↗</button></details>':'<button class="btn" id="specialQuiz">'+id+' 특별 퀴즈</button>')+'<div id="identityRooms" style="margin-top:12px">공개 방 확인 중…</div>';
+    var special=document.getElementById('specialQuiz');if(special)special.onclick=function(){location.href='./orbit-quiz.html?identity='+id};
+    var secret=document.getElementById('echoSignal');if(secret)secret.onclick=function(){location.href='./orbit-quiz.html?identity=ECHO'};
     var keys=await storeList('qz:identity:'+id+':');var roomHtml=[];
     for(var i=0;i<keys.length;i++){var entry=await storeGet(keys[i]);if(!entry||!/^\d{4}$/.test(String(entry.pin)))continue;var state=await storeGet('qz:'+entry.pin+':state');if(state&&state.phase==='lobby')roomHtml.push('<button class="btn ghost identity-join" data-pin="'+entry.pin+'" style="margin:5px 0">방 '+entry.pin+' 참가</button>')}
     document.getElementById('identityRooms').innerHTML=roomHtml.length?roomHtml.join(''):'현재 참가 가능한 공개 방이 없어요.';
