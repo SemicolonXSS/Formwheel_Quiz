@@ -27,10 +27,10 @@
 
   // ---------- utilities ----------
   function uid(len){
-    return Math.random().toString(36).slice(2, 2+len);
+    return Array.from(crypto.getRandomValues(new Uint8Array(len)), b => (b % 36).toString(36)).join('');
   }
   function genPin(){
-    return String(Math.floor(1000 + Math.random()*9000));
+    return String(1000 + crypto.getRandomValues(new Uint32Array(1))[0] % 9000);
   }
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){
