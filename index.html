@@ -47,6 +47,10 @@ root.querySelector('#seran-share').addEventListener('click',async()=>{try{await 
 document.addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||e.isComposing||e.repeat||e.target?.closest('input,textarea,select,[contenteditable=true]'))return;if(e.key==='?'&&e.shiftKey){details.open=!details.open;}else if(e.key==='Escape'&&details.open){details.open=false;}});
 })();
 </script>
+
+<style id="secol-navigation-style">#secol-scroll-top{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:9000;padding:11px 15px;border:2px solid currentColor;border-radius:999px;background:#fff;color:#202638;font:700 14px system-ui;box-shadow:0 3px 14px #0002;cursor:pointer}#secol-scroll-top[hidden]{display:none!important}#secol-scroll-top:focus-visible{outline:3px solid #ff8c28;outline-offset:3px}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}}</style>
+<button type="button" id="secol-scroll-top" hidden aria-label="페이지 맨 위로 이동">↑ 맨 위로</button>
+<script>(function(){const b=document.getElementById('secol-scroll-top');if(!b)return;let pending=false;function refresh(){pending=false;b.hidden=window.scrollY<420}addEventListener('scroll',()=>{if(!pending){pending=true;requestAnimationFrame(refresh)}},{passive:true});b.addEventListener('click',()=>window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'}));refresh()})();</script>
 </body>
 </html>
 
