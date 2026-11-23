@@ -277,8 +277,8 @@
         '<p class="sub">각자 폰이나 PC로 접속해서 실시간으로 맞히는 퀴즈예요. 이 게임의 점수는 저장되지 않고, 창을 닫으면 사라져요.</p>' +
         draftsHtml +
         '<div class="home-choice">' +
-          '<div class="home-card" id="pickHost"><h3>퀴즈 만들기</h3><p>문제를 준비하고 참가 코드를 발급해요. 큰 화면(발표용)에 띄워두세요.</p></div>' +
-          '<div class="home-card" id="pickJoin"><h3>참가하기</h3><p>진행자에게 받은 코드를 입력하고 닉네임으로 들어가요.</p></div>' +
+          '<div class="home-card" id="pickHost"><h2>퀴즈 만들기</h2><p>문제를 준비하고 참가 코드를 발급해요. 큰 화면(발표용)에 띄워두세요.</p></div>' +
+          '<div class="home-card" id="pickJoin"><h2>참가하기</h2><p>진행자에게 받은 코드를 입력하고 닉네임으로 들어가요.</p></div>' +
         '</div>' +
       '</div></main>';
     wireNavbar();
@@ -675,7 +675,7 @@
   }
 
   async function showIdentityOptions(id){
-    var box=document.getElementById('identityOptions');box.style.display='block';box.innerHTML='<h3>'+id+' Identity</h3><p class="sub">'+(id==='ECHO'?'공개 방 목록입니다.':'특별 퀴즈를 시작하거나 공개 방에 참가할 수 있어요.')+'</p>'+(id==='ECHO'?'<details style="margin:0 0 12px;font-size:11px;color:#817a94"><summary style="cursor:pointer;width:max-content;opacity:.55" aria-label="숨겨진 신호">···</summary><p style="font-size:12px">되돌아오는 것은 언제나 같은 모습일까?</p><button type="button" id="echoSignal" class="btn ghost small" style="opacity:.8">신호 따라가기 ↗</button></details>':'<button class="btn" id="specialQuiz">'+id+' 특별 퀴즈</button>')+'<div id="identityRooms" style="margin-top:12px">공개 방 확인 중…</div>';
+    var box=document.getElementById('identityOptions');box.style.display='block';box.innerHTML='<h2>'+id+' Identity</h2><p class="sub">'+(id==='ECHO'?'공개 방 목록입니다.':'특별 퀴즈를 시작하거나 공개 방에 참가할 수 있어요.')+'</p>'+(id==='ECHO'?'<details style="margin:0 0 12px;font-size:11px;color:#817a94"><summary style="cursor:pointer;width:max-content;opacity:.55" aria-label="숨겨진 신호">···</summary><p style="font-size:12px">되돌아오는 것은 언제나 같은 모습일까?</p><button type="button" id="echoSignal" class="btn ghost small" style="opacity:.8">신호 따라가기 ↗</button></details>':'<button class="btn" id="specialQuiz">'+id+' 특별 퀴즈</button>')+'<div id="identityRooms" style="margin-top:12px">공개 방 확인 중…</div>';
     var special=document.getElementById('specialQuiz');if(special)special.onclick=function(){location.href='./orbit-quiz.html?identity='+id};
     var secret=document.getElementById('echoSignal');if(secret)secret.onclick=function(){location.href='./orbit-quiz.html?identity=ECHO'};
     var keys=await storeList('qz:identity:'+id+':');var roomHtml=[];
